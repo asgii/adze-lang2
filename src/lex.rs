@@ -20,6 +20,11 @@ pub enum TokenKind {
     OpAdd,
     OpSub,
 
+    // 'Keyword'
+    KeyReturn,
+    KeyIf,
+    KeyElse,
+
     // 'Other': placeholder name
     OthName,
     OthInvalid,
@@ -45,6 +50,12 @@ static SYMBOLS: phf::Map<&'static str, TokenKind> = phf_map! {
     "}" => TokenKind::BraceClose,
     "(" => TokenKind::ParenOpen,
     ")" => TokenKind::ParenClose,
+};
+
+static KEYWORDS: phf::Map<&'static str, TokenKind> = phf_map! {
+    "return" => TokenKind::KeyReturn,
+    "if"     => TokenKind::KeyIf,
+    "else"   => TokenKind::KeyElse,
 };
 
 #[derive (Debug)]
@@ -108,12 +119,17 @@ impl Lexer {
         word: &'a str,
         state: &mut LexerState,
     ) -> Option<Token<'a>> {
-        let token = match SYMBOLS.get(word) {
-            Some(kind) => Token::new(*kind, word),
-            None => {
-                // @TODO check name, otherwise invalid
-                Token::new(TokenKind::OthInvalid, word)
-            },
+        let mut token = Self::match_symbols(word);
+
+        if token.is_none() {
+            token = Self::match_keywords(word);
+        }
+
+        // @TODO check name, otherwise invalid
+        //
+        let token = match token {
+            Some(tok) => tok,
+            None => Token::new(TokenKind::OthInvalid, word),
         };
 
         let (token, next_state) = Self::handle_comments(token, *state);
@@ -121,6 +137,20 @@ impl Lexer {
         *state = next_state;
 
         token
+    }
+
+    fn match_symbols<'a>(word: &'a str) -> Option<Token<'a>> {
+        match SYMBOLS.get(word) {
+            Some(kind) => Some(Token::new(*kind, word)),
+            None => None,
+        }
+    }
+
+    fn match_keywords<'a>(word: &'a str) -> Option<Token<'a>> {
+        match KEYWORDS.get(word) {
+            Some(kind) => Some(Token::new(*kind, word)),
+            None => None,
+        }
     }
 
     /// Decide whether or not to keep `token`, given `state`, the state of

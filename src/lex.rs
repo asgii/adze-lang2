@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+extern crate phf;
 
 // @TODO move out of lex
 //
@@ -31,28 +31,21 @@ enum LexerState {
     MidComment,
 }
 
-// @TODO better way of doing this
-//
-fn parse_map() -> HashMap<&'static str, TokenKind> {
+static SYMBOLS: phf::Map<&'static str, TokenKind> = phf_map! {
+    "," => TokenKind::GramComma,
+    ";" => TokenKind::GramSemicolon,
+    ":" => TokenKind::GramColon,
+    "#" => TokenKind::GramComment,
 
-    let mut parse_map = HashMap::new();
+    "=" => TokenKind::OpAssign,
+    "+" => TokenKind::OpAdd,
+    "-" => TokenKind::OpSub,
 
-    parse_map.insert(",", TokenKind::GramComma);
-    parse_map.insert(";", TokenKind::GramSemicolon);
-    parse_map.insert(":", TokenKind::GramColon);
-    parse_map.insert("#", TokenKind::GramComment);
-
-    parse_map.insert("{", TokenKind::BraceOpen);
-    parse_map.insert("}", TokenKind::BraceClose);
-    parse_map.insert("(", TokenKind::ParenOpen);
-    parse_map.insert(")", TokenKind::ParenClose);
-
-    parse_map.insert("=", TokenKind::OpAssign);
-    parse_map.insert("+", TokenKind::OpAdd);
-    parse_map.insert("-", TokenKind::OpSub);
-
-    parse_map
-}
+    "{" => TokenKind::BraceOpen,
+    "}" => TokenKind::BraceClose,
+    "(" => TokenKind::ParenOpen,
+    ")" => TokenKind::ParenClose,
+};
 
 #[derive (Debug)]
 pub struct Token<'a> {
@@ -74,15 +67,13 @@ impl<'a> Token<'a> {
 }
 
 pub struct Lexer {
-    parse_map: HashMap<&'static str, TokenKind>,
+
 }
 
 impl Lexer {
 
     pub fn new() -> Self {
-        Self {
-            parse_map: parse_map(),
-        }
+        Self {}
     }
 
     pub fn lex<'a>(
@@ -117,7 +108,7 @@ impl Lexer {
         word: &'a str,
         state: &mut LexerState,
     ) -> Option<Token<'a>> {
-        let token = match self.parse_map.get(word) {
+        let token = match SYMBOLS.get(word) {
             Some(kind) => Token::new(*kind, word),
             None => {
                 // @TODO check name, otherwise invalid

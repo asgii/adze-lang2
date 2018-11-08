@@ -77,6 +77,69 @@ impl<'a> Token<'a> {
     }
 }
 
+struct TokenIter<'a> {
+    word: &'a str,
+}
+
+impl <'a> TokenIter<'a> {
+    pub fn new(word: &'a str) -> TokenIter<'a> {
+        TokenIter {
+            word,
+        }
+    }
+}
+
+impl <'a> Iterator for TokenIter<'a> {
+    type Item = Token<'a>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        // The only case where we stop iterating is when we run out of word.
+        //
+        if self.word.len() == 0 {
+            return None;
+        }
+
+        // @TODO make generic fn of this
+        //
+        for (symbol, token) in SYMBOLS.entries() {
+            if symbol.len() > self.word.len() {
+                continue;
+            }
+            let trunc = &self.word[..symbol.len()];
+
+            if *symbol == trunc {
+                self.word = &self.word[symbol.len()..];
+
+                return Some(Token::new(*token, trunc));
+            }
+        }
+
+        for (keyword, token) in KEYWORDS.entries() {
+            if keyword.len() > self.word.len() {
+                continue;
+            }
+            let trunc = &self.word[..keyword.len()];
+
+            if *keyword == trunc {
+                self.word = &self.word[keyword.len()..];
+
+                return Some(Token::new(*token, trunc));
+            }
+        }
+
+        // @TODO names
+
+        // @TODO this doesn't handle e.g. 'varName;', because the semicolon is
+        // afterward.
+        // This can probably be handled with names, because getting a name will
+        // involve eating until a non-letter/digit.
+
+        let remaining = self.word;
+        self.word = "";
+        Some(Token::new(TokenKind::OthInvalid, remaining))
+    }
+}
+
 pub struct Lexer {
 
 }
@@ -104,53 +167,24 @@ impl Lexer {
 
             let words = line.split_whitespace();
             for word in words {
+                let mut iter = TokenIter::new(word);
 
-                if let Some(token) = self.lex_word(word, &mut state) {
-                    tokens.push(token);
+                // @TODO this is not exactly right.
+
+                while let Some(token) = iter.next() {
+                    let (new_token, new_state) =
+                        Self::handle_comments(token, state);
+
+                    state = new_state;
+
+                    if let Some(some_token) = new_token {
+                        tokens.push(some_token);
+                    }
                 }
             }
         }
 
         tokens
-    }
-
-    fn lex_word<'a>(
-        &self,
-        word: &'a str,
-        state: &mut LexerState,
-    ) -> Option<Token<'a>> {
-        let mut token = Self::match_symbols(word);
-
-        if token.is_none() {
-            token = Self::match_keywords(word);
-        }
-
-        // @TODO check name, otherwise invalid
-        //
-        let token = match token {
-            Some(tok) => tok,
-            None => Token::new(TokenKind::OthInvalid, word),
-        };
-
-        let (token, next_state) = Self::handle_comments(token, *state);
-
-        *state = next_state;
-
-        token
-    }
-
-    fn match_symbols<'a>(word: &'a str) -> Option<Token<'a>> {
-        match SYMBOLS.get(word) {
-            Some(kind) => Some(Token::new(*kind, word)),
-            None => None,
-        }
-    }
-
-    fn match_keywords<'a>(word: &'a str) -> Option<Token<'a>> {
-        match KEYWORDS.get(word) {
-            Some(kind) => Some(Token::new(*kind, word)),
-            None => None,
-        }
     }
 
     /// Decide whether or not to keep `token`, given `state`, the state of

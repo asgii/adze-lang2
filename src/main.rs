@@ -1,4 +1,6 @@
+#![feature(ptr_offset_from)]
 #![feature(plugin)]
+
 #![plugin(phf_macros)]
 extern crate phf;
 extern crate memmap;

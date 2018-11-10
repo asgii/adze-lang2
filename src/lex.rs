@@ -183,6 +183,112 @@ impl <'a> TokenIter<'a> {
             self.whitespace = was_whitespace;
         }
     }
+
+    /// Advance until the next symbol or whitespace/line-ending; return either
+    /// a valid or invalid name token.
+    ///
+    fn eat_name(&mut self) -> Token<'a> {
+        assert_ne!(self.word.len(), 0);
+
+        let mut valid = true;
+
+        // Leading char must be alphabetical
+        //
+        // @OPTION as in Rust, accept leading underscore
+        //
+        if !self.word.bytes().next().unwrap().is_ascii_alphabetic() {
+            valid = false;
+        }
+
+        let mut prev_char = None;
+        let mut remaining = self.word;
+        // Note len() is number of bytes, not chars. We'll stick to bytes (we
+        // are enforcing ASCII anyway).
+        while remaining.len() > 0 {
+            if remaining.bytes().next().unwrap().is_ascii_whitespace() {
+                break;
+            }
+
+            // Don't just break on invalidity; break on either whitespace or an
+            // in principle valid symbol.
+            // This makes the return the most useful, since it groups together
+            // invalid characters as one Token, rather than acting naively as if
+            // they were completely unrelated invalidities.
+
+            let mut found_symbol = None;
+            let mut len_max_symbol = 0;
+            for symbol in SYMBOLS.keys() {
+                if symbol.len() > self.word.len() {
+                    continue;
+                }
+                let trunc = &remaining[..symbol.len()];
+
+                if symbol.len() > len_max_symbol {
+                    len_max_symbol = symbol.len();
+                }
+
+                if *symbol == trunc {
+                    found_symbol = Some(*symbol);
+                    break;
+                }
+            }
+
+            match found_symbol {
+                None => {
+                    // len_max_symbol is the length we can now advance.
+                    //
+                    // We should make a note if the name stopped being valid
+                    // along that length, despite the fact, as above, that that
+                    // should not stop us iterating further.
+                    //
+                    // @OPTION move into fn
+                    //
+                    for this_char in remaining[..len_max_symbol].bytes() {
+                        // Allow _ as exception to alphanumericality
+                        if this_char == '_' as u8 {
+                            // Don't allow __
+                            if let Some(prev) = prev_char {
+                                if prev == '_' as u8 {
+                                    valid = false;
+                                    break;
+                                }
+                            }
+                        }
+                        else if !this_char.is_ascii_alphanumeric() {
+                            valid = false;
+                            break;
+                        }
+                        prev_char = Some(this_char);
+                    }
+                    // We can advance for the longest length we've checked
+                    // against symbols
+                    remaining = &remaining[len_max_symbol..];
+                },
+                Some(_) => {
+                    // Don't change remaining; it correctly starts just after
+                    // the end of the name.
+                    break;
+                },
+            }
+        }
+
+        // @OPTION is there a better way to compare slices?
+        //
+        let len_name = unsafe {
+            remaining.as_ptr().offset_from(self.word.as_ptr())
+        };
+        let len_name = len_name as usize;
+
+        let name = &self.word[..len_name];
+
+        self.word = &self.word[len_name..];
+
+        let kind = match valid {
+            true  => TokenKind::OthName,
+            false => TokenKind::OthInvalid,
+        };
+        Token::new(kind, name)
+    }
 }
 
 impl <'a> Iterator for TokenIter<'a> {
@@ -272,16 +378,10 @@ impl <'a> Iterator for TokenIter<'a> {
             }
         }
 
-        // @TODO names
-
-        // @TODO this doesn't handle e.g. 'varName;', because the semicolon is
-        // afterward.
-        // This can probably be handled with names, because getting a name will
-        // involve eating until a non-letter/digit.
-
-        let remaining = self.word;
-        self.word = "";
-        Some(Token::new(TokenKind::OthInvalid, remaining))
+        // We haven't matched a symbol or key-word.
+        // We have to pass down a name, assuming it's valid.
+        //
+        Some(self.eat_name())
     }
 }
 

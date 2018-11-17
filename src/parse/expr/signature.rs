@@ -1,6 +1,7 @@
 use lex::{ Token, TokenKind };
 use parse::expr;
 
+#[derive (Debug)]
 pub struct Expr {
     parameters: Vec<Box<expr::Expr>>,
 }

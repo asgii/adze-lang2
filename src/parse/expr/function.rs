@@ -1,6 +1,7 @@
 use lex::{ Token, TokenKind };
 use parse::expr;
 
+#[derive (Debug)]
 pub struct Expr {
     // @TODO should these have type information?
     // Some expressions must have members that are type-generic: ones that

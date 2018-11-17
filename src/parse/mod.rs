@@ -8,7 +8,7 @@ mod expr {
 
     use lex;
 
-    pub trait Expr {
+    pub trait Expr: std::fmt::Debug {
         // parse() doesn't go here. It requires type information.
     }
 

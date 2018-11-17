@@ -6,6 +6,7 @@
 use lex::{ Token, TokenKind };
 use parse::expr;
 
+#[derive (Debug)]
 pub struct Expr {
     block: Box<expr::Expr>,
 }

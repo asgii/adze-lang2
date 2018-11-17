@@ -10,6 +10,7 @@ use std::env;
 use std::str;
 
 mod lex;
+mod parse;
 
 fn main() {
     // Initialise lexer
@@ -42,7 +43,9 @@ fn main() {
 
     let tokens = lexer.lex(text);
 
-    // @TODO parse tokens into AST
+    let parser = parse::Parser::new();
+
+    let tree = parser.parse(tokens);
 
     // @TODO transform AST into ASM
 }

@@ -1,7 +1,5 @@
 extern crate phf;
 
-// @TODO move out of lex
-//
 #[derive (Debug, Copy, Clone)]
 pub enum TokenKind {
     // 'Grammar'
@@ -22,7 +20,7 @@ pub enum TokenKind {
 
     // 'Keyword'
     KeyReturn,
-    KeyIf,
+    KeyIf, // @OPTION do I want if/else?
     KeyElse,
 
     // 'Other': placeholder name
@@ -105,8 +103,8 @@ static KEYWORDS: phf::Map<&'static str, TokenKind> = phf_map! {
 
 #[derive (Debug)]
 pub struct Token<'a> {
-    kind: TokenKind,
-    source: &'a str,
+    pub kind: TokenKind,
+    pub source: &'a str,
 }
 
 impl<'a> Token<'a> {

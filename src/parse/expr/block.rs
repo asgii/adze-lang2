@@ -12,18 +12,16 @@ impl Expr {
     ) -> Option<Self> where I: Iterator<Item=&'a Token<'b>> {
         tokens.eat(TokenKind::BraceOpen)?;
 
+        // Collect statements until a }.
         let mut statements = Vec::new();
         while match tokens.peek()? {
             Token { kind: TokenKind::BraceClose, .. } => false,
             _ => true,
         } {
-            // Currently statement::Expr handles cases like blocks within blocks
-            // etc.
             statements.push(Box::new(
                 expr::statement::Expr::parse(tokens)?) as Box<expr::Expr>
             );
         }
-
         tokens.eat(TokenKind::BraceClose)?;
 
         Some(Expr {

@@ -18,19 +18,26 @@ impl Expr {
         // @OPTION don't return directly, put in Expr.
         // This will be necessary if (as it probably should) parse() returns
         // statement::Expr specifically.
-        match tokens.peek()? {
+        let expr = match tokens.peek()? {
             Token { kind: TokenKind::BraceOpen, .. } => {
-                return Some(Expr {
+                Some(Expr {
                     block: Box::new(expr::block::Expr::parse(tokens)?),
-                });
+                })
+            },
+            Token { kind: TokenKind::OthName, .. } => {
+                Some(Expr {
+                    block: Box::new(expr::init::Expr::parse(tokens)?),
+                })
             },
 
             // @TODO other cases: if-clauses, etc.
             // @OPTION in cases where it's ambiguous, may want to do the
             // switching on parse() returns here
 
-            _ => return None,
-        }
+            _ => None,
+        };
+
+        expr
     }
 }
 

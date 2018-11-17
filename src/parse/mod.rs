@@ -5,6 +5,9 @@ mod expr {
     pub mod signature;
     pub mod block;
     pub mod statement;
+    pub mod init;
+    pub mod name;
+    pub mod literal;
 
     /// A node in the abstract syntax tree.
     ///

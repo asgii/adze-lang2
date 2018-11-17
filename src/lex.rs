@@ -463,3 +463,13 @@ impl Lexer {
         }
     }
 }
+
+/// Parse an integer.
+pub fn get_integer(source: &str) -> Option<i32> {
+    // @TODO technically Rust's integer format won't be ok because it includes
+    // e.g., 1i32
+    match source.parse::<i32>() {
+        Ok(int) => Some(int),
+        Err(_)  => None,
+    }
+}

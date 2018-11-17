@@ -4,7 +4,7 @@
 //! already in use to describe `Expr`s).
 
 use lex::{ Token, TokenKind };
-use parse::expr;
+use parse::{ expr, TokenIter };
 
 #[derive (Debug)]
 pub struct Expr {
@@ -13,13 +13,12 @@ pub struct Expr {
 
 impl Expr {
     pub fn parse<'a, 'b: 'a, I>(
-        tokens: &mut I
+        tokens: &mut TokenIter<'a, 'b, I>,
     ) -> Option<Self> where I: Iterator<Item=&'a Token<'b>> {
-        let token = tokens.next()?;
         // @OPTION don't return directly, put in Expr.
         // This will be necessary if (as it probably should) parse() returns
         // statement::Expr specifically.
-        match token {
+        match tokens.peek()? {
             Token { kind: TokenKind::BraceOpen, .. } => {
                 return Some(Expr {
                     block: Box::new(expr::block::Expr::parse(tokens)?),

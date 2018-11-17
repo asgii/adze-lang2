@@ -1,36 +1,32 @@
 use lex::{ Token, TokenKind };
-use parse::expr;
+use parse::{ expr, TokenIter };
 
 #[derive (Debug)]
 pub struct Expr {
-    signature: Box<expr::Expr>,
     statements: Vec<Box<expr::Expr>>,
 }
 
 impl Expr {
     pub fn parse<'a, 'b: 'a, I>(
-        tokens: &mut I
+        tokens: &mut TokenIter<'a, 'b, I>,
     ) -> Option<Self> where I: Iterator<Item=&'a Token<'b>> {
-        let signature = expr::signature::Expr::parse(tokens)?;
+        tokens.eat(TokenKind::BraceOpen)?;
 
-        // @TODO make a lex::Tokens iterator, have a standardised expect()
-        match tokens.next()? {
-            Token { kind: TokenKind::BraceOpen, .. } => (),
-            _ => return None,
-        }
-
-        // TODO these shouldn't just be statements. e.g. nested blocks, etc.
-        // @OPTION could be useful to bundle repeat_with()
         let mut statements = Vec::new();
-        let statement_iter = std::iter::repeat_with(|| {
-            expr::statement::Expr::parse(tokens)
-        });
-        for statement in statement_iter {
-            statements.push(Box::new(statement?) as Box<expr::Expr>);
+        while match tokens.peek()? {
+            Token { kind: TokenKind::BraceClose, .. } => false,
+            _ => true,
+        } {
+            // Currently statement::Expr handles cases like blocks within blocks
+            // etc.
+            statements.push(Box::new(
+                expr::statement::Expr::parse(tokens)?) as Box<expr::Expr>
+            );
         }
+
+        tokens.eat(TokenKind::BraceClose)?;
 
         Some(Expr {
-            signature: Box::new(signature),
             statements,
         })
     }

@@ -1,5 +1,5 @@
 use lex::{ Token, TokenKind };
-use parse::expr;
+use parse::{ expr, TokenIter };
 
 #[derive (Debug)]
 pub struct Expr {
@@ -8,13 +8,9 @@ pub struct Expr {
 
 impl Expr {
     pub fn parse<'a, 'b: 'a, I>(
-        tokens:&mut I
+        tokens: &mut TokenIter<'a, 'b, I>,
     ) -> Option<Self> where I: Iterator<Item=&'a Token<'b>> {
-        // @TODO make a lex::Tokens iterator, have a standardised expect()
-        match tokens.next()? {
-            Token { kind: TokenKind::ParenOpen, .. } => (),
-            _ => return None,
-        }
+        tokens.eat(TokenKind::ParenOpen)?;
 
         // @TODO
         let mut parameters = Vec::new();
@@ -27,10 +23,7 @@ impl Expr {
         }
         */
 
-        match tokens.next()? {
-            Token { kind: TokenKind::ParenClose, .. } => (),
-            _ => return None,
-        }
+        tokens.eat(TokenKind::ParenClose)?;
 
         Some(Expr {
             parameters,

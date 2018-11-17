@@ -6,14 +6,16 @@ mod expr {
     pub mod block;
     pub mod statement;
 
-    use lex;
-
+    /// A node in the abstract syntax tree.
+    ///
+    /// Some `Expr`s will need generic `dyn Expr`s because different kinds of
+    /// expression could stand in at that point in the tree.
+    /// Where that is not true, it should be ok to type the `Expr` directly,
+    /// without the need of the trait.
+    ///
     pub trait Expr: std::fmt::Debug {
         // parse() doesn't go here. It requires type information.
     }
-
-    // @TODO parse() should
-    // @OPTION/@TODO parse() should probably return a specific Expr
 }
 
 pub struct Tree {
@@ -35,8 +37,41 @@ impl Parser {
     ) -> Option<Tree> {
         Some(Tree {
             function: expr::function::Expr::parse(
-                &mut tokens.iter()
+                &mut TokenIter::new(tokens.iter())
             )?,
         })
+    }
+}
+
+// @OPTION move to lex, have as return of lex()
+pub struct TokenIter<'a, 'b: 'a, I> where I: Iterator<Item=&'a lex::Token<'b>> {
+    tokens: std::iter::Peekable<I>,
+}
+
+impl <'a, 'b, I> TokenIter<'a, 'b, I>
+where I: Iterator<Item=&'a lex::Token<'b>> {
+    pub fn new(tokens: I) -> Self {
+        Self {
+            tokens: tokens.peekable(),
+        }
+    }
+
+    /// Expect `kind`; advance past it if it's there.
+    ///
+    pub fn eat(
+        &mut self,
+        expected: lex::TokenKind,
+    ) -> Option<&lex::Token> {
+        match self.tokens.peek()? {
+            lex::Token { kind: expected, .. } => (),
+            _ => return None,
+        }
+
+        self.tokens.next()
+    }
+
+    pub fn peek(&mut self) -> Option<&'a lex::Token<'b>> {
+        // Peekable::peek() returns a && because we iterate over &.
+        Some(*(self.tokens.peek()?))
     }
 }

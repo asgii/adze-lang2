@@ -18,6 +18,7 @@ mod expr {
     }
 }
 
+#[derive (Debug)]
 pub struct Tree {
     // @TODO dedicated top-level expression
     pub function: expr::function::Expr,
@@ -56,20 +57,22 @@ where I: Iterator<Item=&'a lex::Token<'b>> {
         }
     }
 
-    /// Expect `kind`; advance past it if it's there.
+    /// Expect a `Token` of `TokenKind` `expected`; advance past it if it's
+    /// there.
     ///
     pub fn eat(
         &mut self,
         expected: lex::TokenKind,
     ) -> Option<&lex::Token> {
         match self.tokens.peek()? {
-            lex::Token { kind: expected, .. } => (),
+            lex::Token { kind, .. } if *kind == expected => (),
             _ => return None,
         }
 
         self.tokens.next()
     }
 
+    /// Look at the current `Token` without advancing.
     pub fn peek(&mut self) -> Option<&'a lex::Token<'b>> {
         // Peekable::peek() returns a && because we iterate over &.
         Some(*(self.tokens.peek()?))

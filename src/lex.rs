@@ -239,24 +239,11 @@ impl <'a> TokenIter<'a> {
                     // along that length, despite the fact, as above, that that
                     // should not stop us iterating further.
                     //
-                    // @OPTION move into fn
-                    //
-                    for this_char in remaining[..len_max_symbol].bytes() {
-                        // Allow _ as exception to alphanumericality
-                        if this_char == '_' as u8 {
-                            // Don't allow __
-                            if let Some(prev) = prev_char {
-                                if prev == '_' as u8 {
-                                    valid = false;
-                                    break;
-                                }
-                            }
-                        }
-                        else if !this_char.is_ascii_alphanumeric() {
-                            valid = false;
-                            break;
-                        }
-                        prev_char = Some(this_char);
+                    if valid && !is_valid_name_part(
+                        &remaining[..len_max_symbol],
+                        &mut prev_char,
+                    ) {
+                        valid = false;
                     }
                     // We can advance for the longest length we've checked
                     // against symbols
@@ -462,6 +449,32 @@ impl Lexer {
             },
         }
     }
+}
+
+/// Checks if a part of a string disqualifies the larger string from being a
+/// valid name.
+///
+/// This would work on a full name, too (where `prev_char` is set to `None`),
+/// but it also allows for iterative checking of validity.
+///
+fn is_valid_name_part(source: &str, prev_char: &mut Option<u8>) -> bool {
+    for this_char in source.bytes() {
+        // Allow _ as exception to alphanumericality
+        if this_char == '_' as u8 {
+            // Don't allow __
+            if let Some(prev) = prev_char {
+                if *prev == '_' as u8 {
+                    return false;
+                }
+            }
+        }
+
+        else if !this_char.is_ascii_alphanumeric() {
+            return false;
+        }
+        *prev_char = Some(this_char);
+    }
+    true
 }
 
 /// Parse an integer.

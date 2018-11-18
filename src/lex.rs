@@ -190,15 +190,6 @@ impl <'a> TokenIter<'a> {
 
         let mut valid = true;
 
-        // Leading char must be alphabetical
-        //
-        // @OPTION as in Rust, accept leading underscore
-        //
-        if !self.word.bytes().next().unwrap().is_ascii_alphabetic() {
-            valid = false;
-        }
-
-        let mut prev_char = None;
         let mut remaining = self.word;
         // Note len() is number of bytes, not chars. We'll stick to bytes (we
         // are enforcing ASCII anyway).
@@ -233,20 +224,8 @@ impl <'a> TokenIter<'a> {
 
             match found_symbol {
                 None => {
-                    // len_max_symbol is the length we can now advance.
-                    //
-                    // We should make a note if the name stopped being valid
-                    // along that length, despite the fact, as above, that that
-                    // should not stop us iterating further.
-                    //
-                    if valid && !is_valid_name_part(
-                        &remaining[..len_max_symbol],
-                        &mut prev_char,
-                    ) {
-                        valid = false;
-                    }
-                    // We can advance for the longest length we've checked
-                    // against symbols
+                    // len_max_symbol is the length we've checked against
+                    // symbols; we can advance that much.
                     remaining = &remaining[len_max_symbol..];
                 },
                 Some(_) => {
@@ -268,7 +247,7 @@ impl <'a> TokenIter<'a> {
 
         self.word = &self.word[len_name..];
 
-        let kind = match valid {
+        let kind = match is_valid_name(name) {
             true  => TokenKind::OthName,
             false => TokenKind::OthInvalid,
         };
@@ -451,28 +430,39 @@ impl Lexer {
     }
 }
 
-/// Checks if a part of a string disqualifies the larger string from being a
-/// valid name.
-///
-/// This would work on a full name, too (where `prev_char` is set to `None`),
-/// but it also allows for iterative checking of validity.
-///
-fn is_valid_name_part(source: &str, prev_char: &mut Option<u8>) -> bool {
+fn is_valid_name(
+    mut source: &str,
+) -> bool {
+    assert_ne!(source.len(), 0);
+
+    // Exceptions for first char
+    // @OPTION as in Rust, accept leading underscore
+    let first_char = source.bytes().next().unwrap();
+    if !first_char.is_ascii_alphabetic() {
+        return false;
+    }
+    let mut prev_char = first_char;
+    // Advance so the first char isn't counted under the below
+    source = &source[1..];
+
     for this_char in source.bytes() {
         // Allow _ as exception to alphanumericality
         if this_char == '_' as u8 {
             // Don't allow __
-            if let Some(prev) = prev_char {
-                if *prev == '_' as u8 {
-                    return false;
-                }
+            if prev_char == '_' as u8 {
+                return false;
             }
         }
 
         else if !this_char.is_ascii_alphanumeric() {
             return false;
         }
-        *prev_char = Some(this_char);
+        prev_char = this_char;
+    }
+
+    // Exceptions for last char: don't accept _
+    if prev_char == '_' as u8 {
+        return false;
     }
     true
 }

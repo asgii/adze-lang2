@@ -37,9 +37,8 @@ impl Expr {
         tokens.eat(TokenKind::OpAssign)?;
 
         // @TODO evaluable expressions
-        // @TODO don't use OthInvalid as a valid token!
         let rhs = match tokens.peek()? {
-            Token { kind: TokenKind::OthInvalid, .. } => {
+            Token { kind: TokenKind::LitInteger, .. } => {
                 Box::new(
                     expr::literal::Expr::parse(tokens)?
                 ) as Box<expr::Expr>

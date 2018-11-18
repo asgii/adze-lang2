@@ -23,6 +23,9 @@ pub enum TokenKind {
     KeyIf, // @OPTION do I want if/else?
     KeyElse,
 
+    // 'Literal'
+    LitInteger,
+
     // 'Other': placeholder name
     OthName,
     OthInvalid,
@@ -247,10 +250,8 @@ impl <'a> TokenIter<'a> {
 
         self.word = &self.word[len_name..];
 
-        let kind = match is_valid_name(name) {
-            true  => TokenKind::OthName,
-            false => TokenKind::OthInvalid,
-        };
+        let kind = lex_name(name);
+
         Token::new(kind, name)
     }
 }
@@ -430,9 +431,17 @@ impl Lexer {
     }
 }
 
-fn is_valid_name(
-    mut source: &str,
-) -> bool {
+fn lex_name(source: &str) -> TokenKind {
+    if is_valid_integer(source) {
+        return TokenKind::LitInteger;
+    }
+    else if is_valid_name(source) {
+        return TokenKind::OthName;
+    }
+    TokenKind::OthInvalid
+}
+
+fn is_valid_name(mut source: &str) -> bool {
     assert_ne!(source.len(), 0);
 
     // Exceptions for first char
@@ -465,6 +474,13 @@ fn is_valid_name(
         return false;
     }
     true
+}
+
+fn is_valid_integer(source: &str) -> bool {
+    match get_integer(source) {
+        Some(_) => true,
+        None => false,
+    }
 }
 
 /// Parse an integer.

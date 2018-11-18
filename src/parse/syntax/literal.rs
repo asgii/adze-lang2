@@ -1,22 +1,22 @@
 use lex::{ Token, TokenKind, get_integer };
-use parse::{ expr, TokenIter };
+use parse::{ syntax, TokenIter };
 
 #[derive (Debug)]
-pub struct Expr {
+pub struct Syntax {
     // @TODO other kinds of literal (make an enum)
     value: i32,
 }
 
-impl Expr {
+impl Syntax {
     pub fn parse<'a, 'b: 'a, I>(
         tokens: &mut TokenIter<'a, 'b, I>,
     ) -> Option<Self> where I: Iterator<Item=&'a Token<'b>> {
         let lit = tokens.eat(TokenKind::LitInteger)?;
 
-        Some(Expr {
+        Some(Syntax {
             value: get_integer(lit.source)?,
         })
     }
 }
 
-impl expr::Expr for Expr {}
+impl syntax::Syntax for Syntax {}

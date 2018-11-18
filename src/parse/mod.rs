@@ -1,6 +1,6 @@
 use lex;
 
-mod expr {
+mod syntax {
     pub mod function;
     pub mod signature;
     pub mod block;
@@ -11,12 +11,12 @@ mod expr {
 
     /// A node in the abstract syntax tree.
     ///
-    /// Some `Expr`s will need generic `dyn Expr`s because different kinds of
-    /// expression could stand in at that point in the tree.
-    /// Where that is not true, it should be ok to type the `Expr` directly,
+    /// Some `Syntax`es will need generic `dyn Syntax`es because different kinds
+    /// of syntax could stand in at that point in the tree.
+    /// Where that is not true, it should be ok to type the `Syntax` directly,
     /// without the need of the trait.
     ///
-    pub trait Expr: std::fmt::Debug {
+    pub trait Syntax: std::fmt::Debug {
         // parse() doesn't go here. It requires type information.
     }
 }
@@ -24,7 +24,7 @@ mod expr {
 #[derive (Debug)]
 pub struct Tree {
     // @TODO dedicated top-level expression
-    pub function: expr::function::Expr,
+    pub function: syntax::function::Syntax,
 }
 
 pub struct Parser {}
@@ -40,7 +40,7 @@ impl Parser {
         tokens: Vec<lex::Token<'a>>
     ) -> Option<Tree> {
         Some(Tree {
-            function: expr::function::Expr::parse(
+            function: syntax::function::Syntax::parse(
                 &mut TokenIter::new(tokens.iter())
             )?,
         })

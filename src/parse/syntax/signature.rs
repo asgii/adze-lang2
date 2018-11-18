@@ -1,24 +1,24 @@
 use lex::{ Token, TokenKind };
-use parse::{ expr, TokenIter };
+use parse::{ syntax, TokenIter };
 
 #[derive (Debug)]
-pub struct Expr {
-    name: expr::name::Expr,
-    parameters: Vec<Box<expr::Expr>>,
+pub struct Syntax {
+    name: syntax::name::Syntax,
+    parameters: Vec<Box<syntax::Syntax>>,
 }
 
-impl Expr {
+impl Syntax {
     pub fn parse<'a, 'b: 'a, I>(
         tokens: &mut TokenIter<'a, 'b, I>,
     ) -> Option<Self> where I: Iterator<Item=&'a Token<'b>> {
-        let name = expr::name::Expr::parse(tokens)?;
+        let name = syntax::name::Syntax::parse(tokens)?;
         tokens.eat(TokenKind::ParenOpen)?;
 
         // @TODO
         let mut parameters = Vec::new();
         /*
         let parameter_iter = std::iter::repeat_with(|| {
-            expr::parameter::Expr::parse(&mut tokens)?
+            syntax::parameter::Syntax::parse(&mut tokens)?
         });
         for parameters in parameter_iter {
             parameters.push(paramater);
@@ -27,13 +27,13 @@ impl Expr {
 
         tokens.eat(TokenKind::ParenClose)?;
 
-        Some(Expr {
+        Some(Syntax {
             name,
             parameters,
         })
     }
 }
 
-impl expr::Expr for Expr {
+impl syntax::Syntax for Syntax {
 
 }

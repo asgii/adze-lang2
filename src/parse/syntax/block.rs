@@ -1,12 +1,12 @@
 use lex::{ Token, TokenKind };
-use parse::{ expr, TokenIter };
+use parse::{ syntax, TokenIter };
 
 #[derive (Debug)]
-pub struct Expr {
-    statements: Vec<Box<expr::Expr>>,
+pub struct Syntax {
+    statements: Vec<Box<syntax::Syntax>>,
 }
 
-impl Expr {
+impl Syntax {
     pub fn parse<'a, 'b: 'a, I>(
         tokens: &mut TokenIter<'a, 'b, I>,
     ) -> Option<Self> where I: Iterator<Item=&'a Token<'b>> {
@@ -19,17 +19,17 @@ impl Expr {
             _ => true,
         } {
             statements.push(Box::new(
-                expr::statement::Expr::parse(tokens)?) as Box<expr::Expr>
+                syntax::statement::Syntax::parse(tokens)?) as Box<syntax::Syntax>
             );
         }
         tokens.eat(TokenKind::BraceClose)?;
 
-        Some(Expr {
+        Some(Syntax {
             statements,
         })
     }
 }
 
-impl expr::Expr for Expr {
+impl syntax::Syntax for Syntax {
 
 }

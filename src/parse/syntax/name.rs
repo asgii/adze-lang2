@@ -1,24 +1,24 @@
 use lex::{ Token, TokenKind };
-use parse::{ expr, TokenIter };
+use parse::{ syntax, TokenIter };
 
 #[derive (Debug)]
-pub struct Expr {
-    // @OPTION eventually Exprs will probably have &Tokens, at which point you
+pub struct Syntax {
+    // @OPTION eventually Syntaxs will probably have &Tokens, at which point you
     // already have the name
     string: String,
 }
 
-impl Expr {
+impl Syntax {
     pub fn parse<'a, 'b: 'a, I>(
         tokens: &mut TokenIter<'a, 'b, I>,
     ) -> Option<Self> where I: Iterator<Item=&'a Token<'b>> {
         // @TODO check validity as variable name
         let name = tokens.eat(TokenKind::OthName)?;
 
-        Some(Expr {
+        Some(Syntax {
             string: name.source.to_string(),
         })
     }
 }
 
-impl expr::Expr for Expr {}
+impl syntax::Syntax for Syntax {}

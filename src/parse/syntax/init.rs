@@ -1,18 +1,18 @@
 use lex::{ Token, TokenKind };
-use parse::{ expr, TokenIter };
+use parse::{ syntax, TokenIter };
 
 #[derive (Debug)]
-pub struct Expr {
-    lhs: expr::name::Expr,
-    lhs_type: Option<expr::name::Expr>,
-    rhs: Box<expr::Expr>,
+pub struct Syntax {
+    lhs: syntax::name::Syntax,
+    lhs_type: Option<syntax::name::Syntax>,
+    rhs: Box<syntax::Syntax>,
 }
 
-impl Expr {
+impl Syntax {
     pub fn parse<'a, 'b: 'a, I>(
         tokens: &mut TokenIter<'a, 'b, I>,
     ) -> Option<Self> where I: Iterator<Item=&'a Token<'b>> {
-        let lhs = expr::name::Expr::parse(tokens)?;
+        let lhs = syntax::name::Syntax::parse(tokens)?;
 
         // a := b
         // a: int = b
@@ -30,7 +30,7 @@ impl Expr {
                 None
             },
             Token { kind: TokenKind::OthName, .. } => {
-                Some(expr::name::Expr::parse(tokens)?)
+                Some(syntax::name::Syntax::parse(tokens)?)
             },
             _ => return None,
         };
@@ -40,20 +40,20 @@ impl Expr {
         let rhs = match tokens.peek()? {
             Token { kind: TokenKind::LitInteger, .. } => {
                 Box::new(
-                    expr::literal::Expr::parse(tokens)?
-                ) as Box<expr::Expr>
+                    syntax::literal::Syntax::parse(tokens)?
+                ) as Box<syntax::Syntax>
             },
             Token { kind: TokenKind::OthName, .. } => {
                 Box::new(
-                    expr::name::Expr::parse(tokens)?
-                ) as Box<expr::Expr>
+                    syntax::name::Syntax::parse(tokens)?
+                ) as Box<syntax::Syntax>
             },
             _ => return None,
         };
 
         tokens.eat(TokenKind::GramSemicolon);
 
-        Some(Expr {
+        Some(Syntax {
             lhs,
             lhs_type,
             rhs,
@@ -61,4 +61,4 @@ impl Expr {
     }
 }
 
-impl expr::Expr for Expr {}
+impl syntax::Syntax for Syntax {}

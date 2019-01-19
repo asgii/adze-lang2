@@ -7,3 +7,5 @@ authors = ["asgii <32249254+asgii@users.noreply.github.com>"]
 memmap = "0.7.0"
 phf = "0.7.23"
 phf_macros = "0.7.23"
+enum-map = "0.4.1"
+lazy_static = "1.2.0"

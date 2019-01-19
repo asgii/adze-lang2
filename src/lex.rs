@@ -1,6 +1,7 @@
 extern crate phf;
+extern crate enum_map;
 
-#[derive (Debug, Copy, Clone, PartialEq)]
+#[derive (Debug, Copy, Clone, PartialEq, Enum)]
 pub enum TokenKind {
     // 'Grammar'
     GramComma,
@@ -17,6 +18,7 @@ pub enum TokenKind {
     OpAssign,
     OpAdd,
     OpSub,
+    OpMul,
 
     // 'Keyword'
     KeyReturn,
@@ -76,6 +78,10 @@ static SYMBOLS: phf::Map<&'static str, TokenProperties> = phf_map! {
         kind: TokenKind::OpSub,
         can_follow: TokenCanFollowImmediately::Cannot,
     },
+    "*" => TokenProperties {
+        kind: TokenKind::OpMul,
+        can_follow: TokenCanFollowImmediately::Cannot,
+    },
 
     "{" => TokenProperties {
         kind: TokenKind::BraceOpen,
@@ -111,7 +117,6 @@ pub struct Token<'a> {
 }
 
 impl<'a> Token<'a> {
-
     pub fn new(
         kind: TokenKind,
         source: &'a str,
@@ -358,15 +363,10 @@ enum LexerState {
     MidComment,
 }
 
-pub struct Lexer {
-
-}
+pub struct Lexer {}
 
 impl Lexer {
-
-    pub fn new() -> Self {
-        Self {}
-    }
+    pub fn new() -> Self { Self {} }
 
     pub fn lex<'a>(
         &self,

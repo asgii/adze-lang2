@@ -36,20 +36,9 @@ impl Syntax {
         };
         tokens.eat(TokenKind::OpAssign)?;
 
-        // @TODO evaluable expressions
-        let rhs = match tokens.peek()? {
-            Token { kind: TokenKind::LitInteger, .. } => {
-                Box::new(
-                    syntax::literal::Syntax::parse(tokens)?
-                ) as Box<syntax::Syntax>
-            },
-            Token { kind: TokenKind::OthName, .. } => {
-                Box::new(
-                    syntax::name::Syntax::parse(tokens)?
-                ) as Box<syntax::Syntax>
-            },
-            _ => return None,
-        };
+        let rhs = Box::new(
+            syntax::expression::Syntax::parse(tokens)?,
+        ) as Box<syntax::Syntax>;
 
         tokens.eat(TokenKind::GramSemicolon);
 

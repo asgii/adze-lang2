@@ -5,6 +5,8 @@ mod syntax {
     pub mod signature;
     pub mod block;
     pub mod statement;
+    pub mod expression;
+    pub mod binary;
     pub mod init;
     pub mod name;
     pub mod literal;
@@ -14,6 +16,8 @@ mod syntax {
         Signature,
         Block,
         Statement,
+        Expression,
+        Binary,
         Init,
         Name,
         Literal,
@@ -45,10 +49,7 @@ pub struct Tree {
 pub struct Parser {}
 
 impl Parser {
-
-    pub fn new() -> Self {
-        Self {}
-    }
+    pub fn new() -> Self { Self {} }
 
     pub fn parse<'a>(
         &self,
@@ -62,7 +63,12 @@ impl Parser {
     }
 }
 
+// Note we don't impl Iterator, to discourage use of next(); eat() is more
+// succinct.
+//
 // @OPTION move to lex, have as return of lex()
+//
+/// Not to be confused with `lex::TokenIter`.
 pub struct TokenIter<'a, 'b: 'a, I> where I: Iterator<Item=&'a lex::Token<'b>> {
     tokens: std::iter::Peekable<I>,
 }

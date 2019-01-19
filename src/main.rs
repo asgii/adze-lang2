@@ -3,6 +3,10 @@
 
 #![plugin(phf_macros)]
 extern crate phf;
+#[macro_use]
+extern crate enum_map;
+#[macro_use]
+extern crate lazy_static;
 extern crate memmap;
 
 use std::fs;

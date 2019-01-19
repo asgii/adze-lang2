@@ -1,5 +1,5 @@
 use lex::{ Token, TokenKind };
-use parse::{ syntax, TokenIter };
+use parse::{ syntax, syntax::SyntaxKind, TokenIter };
 
 #[derive (Debug)]
 pub struct Syntax {
@@ -61,4 +61,6 @@ impl Syntax {
     }
 }
 
-impl syntax::Syntax for Syntax {}
+impl syntax::Syntax for Syntax {
+    fn kind(&self) -> syntax::SyntaxKind { SyntaxKind::Init }
+}

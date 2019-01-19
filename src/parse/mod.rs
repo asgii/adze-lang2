@@ -9,6 +9,16 @@ mod syntax {
     pub mod name;
     pub mod literal;
 
+    pub enum SyntaxKind {
+        Function,
+        Signature,
+        Block,
+        Statement,
+        Init,
+        Name,
+        Literal,
+    }
+
     /// A node in the abstract syntax tree.
     ///
     /// Some `Syntax`es will need generic `dyn Syntax`es because different kinds
@@ -18,6 +28,11 @@ mod syntax {
     ///
     pub trait Syntax: std::fmt::Debug {
         // parse() doesn't go here. It requires type information.
+
+        // @OPTION this isn't actually needed, bc of Any?
+        fn kind(&self) -> SyntaxKind;
+
+        fn any(&mut self) -> Option<&mut std::any::Any> { None }
     }
 }
 

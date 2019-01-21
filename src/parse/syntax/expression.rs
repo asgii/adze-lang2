@@ -2,7 +2,7 @@
 //! value.
 
 use lex::{ Token, TokenKind };
-use parse::{ syntax, syntax::SyntaxKind, TokenIter };
+use parse::{ syntax, TokenIter };
 
 #[derive (Debug)]
 pub struct Syntax {
@@ -60,5 +60,6 @@ impl Syntax {
 }
 
 impl syntax::Syntax for Syntax {
-    fn kind(&self) -> SyntaxKind { SyntaxKind::Expression }
+    fn any(&self) -> Option<&std::any::Any> { Some(self) }
+    fn any_mut(&mut self) -> Option<&mut std::any::Any> { Some(self) }
 }

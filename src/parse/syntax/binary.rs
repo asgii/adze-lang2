@@ -1,7 +1,7 @@
 extern crate enum_map;
 
 use lex::{ Token, TokenKind };
-use parse::{ syntax, syntax::SyntaxKind, TokenIter };
+use parse::{ syntax, TokenIter };
 
 lazy_static! {
     static ref PRECEDENCE: enum_map::EnumMap<TokenKind, usize> = enum_map! {
@@ -57,81 +57,95 @@ impl Syntax {
         //
         let mut rhs = Box::new(syntax::expression::Syntax::parse(tokens)?);
         use parse::syntax::Syntax;
-        match rhs.value.kind() {
-            SyntaxKind::Binary => {
-                let mut lh_op = op;
-                let mut lh_op_precedes = false;
+        if Self::is_binary(&*rhs.value) {
+            let mut lh_op = op;
+            let lh_op_precedes;
 
-                // Use std::any to downcast, for when rhs is another binary::
-                // Syntax.
-                //
-                // Note any() here must return Some. The circumlocution here is
-                // so that any, the reference, goes out of scope before we start
-                // moving rhs around.
-                // (The any must be a &mut, because Any is ?Sized, so you can't
-                // have an Option<Any>...)
-                //
-                if let Some(mut rhs_any) = rhs.value.any() {
-                    lh_op_precedes = match rhs_any.downcast_ref::<self::Syntax>(
-                    ) {
-                        Some(rhs_bin) => Self::precedes(lh_op, rhs_bin.op),
-                        _ => panic!(),
-                    };
+            {
+                let mut rhs_binary = Self::binary_mut(&mut *rhs.value).unwrap();
 
-                    if lh_op_precedes {
-                        // X * Y + Z
-                        // Currently Y and Z are together in rhs.
-                        // So we need to take out Y or Z and put it in lhs.
-                        //
-                        // Note we must take out Z and replace with X; we can't
-                        // take out Y, because we don't have what is replacing
-                        // it until after it's taken out. This avoids having to
-                        // use Options in binary::Syntax.
-
-                        if let Some(
-                            mut rhs_bin
-                        ) = rhs_any.downcast_mut::<self::Syntax>() {
-                            use std::mem::swap;
-                            swap(&mut rhs_bin.rhs, &mut lhs);
-
-                            // Now any, i.e. rhs, is Y + X. Swap the ops too.
-                            swap(&mut rhs_bin.op, &mut lh_op);
-                        }
-
-                        // Now rhs is Y * X.
-                        //
-                        // @TODO we must rearrange, because what if instead of
-                        // *, it's a non-commutative op!
-                        // Can do so by swapping perversely swapping more:
-                        // Y * X -> Z * X -> Z * Y -> X * Y...!
-                        // Would the compiler figure it out?
-                    }
-                }
-                else { panic!() }
-
+                lh_op_precedes = Self::precedes(lh_op, rhs_binary.op);
                 if lh_op_precedes {
-                    // Note the order here is not arbitrary, because of the
-                    // non-commutativity of some ops.
-                    Some(self::Syntax {
-                        lhs,
-                        rhs,
-                        op: lh_op,
-                    })
-                }
-                else {
-                    Some(self::Syntax {
-                        lhs,
-                        rhs,
-                        op,
-                    })
-                }
-            },
+                    // The situation is like X * Y + Z; (X * Y) should go first.
+                    //
+                    // X, Y, Z are the operands in L-R order; currently Y and Z
+                    // are together in rhs.
+                    // So we need to take out Y or Z and put it in lhs.
+                    //
+                    // Note we must take out Z and replace with X; we can't
+                    // take out Y, because we don't have what is replacing
+                    // it until after it's taken out. This avoids having to
+                    // use Options in binary::Syntax.
 
-            _ => Some(self::Syntax {
+                    let x = &mut lhs;
+                    let _y = &mut rhs_binary.lhs;
+                    let z = &mut rhs_binary.rhs;
+
+                    use std::mem::swap;
+                    swap(x, z);
+
+                    // Now any, i.e. rhs, is Y + X. Swap the ops too.
+                    swap(&mut rhs_binary.op, &mut lh_op);
+                }
+
+                // Now rhs is Y * X.
+                //
+                // @TODO we must rearrange, because what if instead of
+                // *, it's a non-commutative op!
+                // Can do so by swapping perversely swapping more:
+                // Y * X -> Z * X -> Z * Y -> X * Y...!
+                // Would the compiler figure it out?
+            }
+
+            if lh_op_precedes {
+                // Note the order here is not arbitrary, because of the
+                // non-commutativity of some ops.
+                Some(self::Syntax {
+                    lhs,
+                    rhs,
+                    op: lh_op,
+                })
+            } else {
+                Some(self::Syntax {
+                    lhs,
+                    rhs,
+                    op,
+                })
+            }
+        }
+        else {
+            Some(self::Syntax {
                 lhs,
                 rhs,
                 op,
             })
+        }
+    }
+
+    // These wrap std::any, for simplification.
+    // They can't be put in the trait (it'd have to be generic).
+
+    fn binary(syntax: &syntax::Syntax) -> Option<&Self> {
+        use parse::syntax::Syntax;
+        use std::any::Any;
+
+        syntax.any()?.downcast_ref::<Self>()
+    }
+
+    fn binary_mut(syntax: &mut syntax::Syntax) -> Option<&mut Self> {
+        use parse::syntax::Syntax;
+        use std::any::Any;
+
+        syntax.any_mut()?.downcast_mut::<Self>()
+    }
+
+    fn is_binary(syntax: &syntax::Syntax) -> bool {
+        use parse::syntax::Syntax;
+        use std::any::Any;
+
+        match syntax.any() {
+            Some(any) => any.downcast_ref::<Self>().is_some(),
+            None => false,
         }
     }
 
@@ -142,12 +156,10 @@ impl Syntax {
         Self::get_precedence(a) > Self::get_precedence(b)
     }
 
-    fn get_precedence(op_kind: TokenKind) -> usize {
-        PRECEDENCE[op_kind]
-    }
+    fn get_precedence(op_kind: TokenKind) -> usize { PRECEDENCE[op_kind] }
 }
 
 impl syntax::Syntax for Syntax {
-    fn kind(&self) -> SyntaxKind { SyntaxKind::Binary }
-    fn any(&mut self) -> Option<&mut std::any::Any> { Some(self) }
+    fn any(&self) -> Option<&std::any::Any> { Some(self) }
+    fn any_mut(&mut self) -> Option<&mut std::any::Any> { Some(self) }
 }

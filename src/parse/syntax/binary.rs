@@ -49,12 +49,6 @@ impl Syntax {
         // Note rhs.value, because the type of the expression::Syntax is never
         // going to be binary::Syntax.
         //
-        // X, Y, Z are the operands in L-R order.
-        // lh_op and rh_op are the operators in L-R order.
-        //
-        // @OPTION clarify by using less mutation, e.g. swap(), which
-        // invalidates these names
-        //
         let mut rhs = Box::new(syntax::expression::Syntax::parse(tokens)?);
         use parse::syntax::Syntax;
         if Self::is_binary(&*rhs.value) {
@@ -68,41 +62,51 @@ impl Syntax {
                 if lh_op_precedes {
                     // The situation is like X * Y + Z; (X * Y) should go first.
                     //
-                    // X, Y, Z are the operands in L-R order; currently Y and Z
-                    // are together in rhs.
+                    // Currently, however, they're ordered X * (Y + Z), Y and Z.
+                    // together in rhs.
                     // So we need to take out Y or Z and put it in lhs.
                     //
-                    // Note we must take out Z and replace with X; we can't
-                    // take out Y, because we don't have what is replacing
-                    // it until after it's taken out. This avoids having to
-                    // use Options in binary::Syntax.
+                    // We do this with a tortured sequence of swaps for two
+                    // reasons:
+                    //
+                    // 1) We can't have the Syntax trait return a std::any::Any
+                    // for generics/?Sized reasons. So we're stuck with
+                    // mutation; we can't simply swap the Boxes and return.
+                    //
+                    // 2) Since we're stuck with swaps, we might as well do so
+                    // without swapping in temporary Nones; this means we don't
+                    // have to have Option<Box> in the Syntax. Instead we swap
+                    // in place.
+                    //
+                    // Note the order is important for non-commutative ops.
 
                     let x = &mut lhs;
-                    let _y = &mut rhs_binary.lhs;
+                    let y = &mut rhs_binary.lhs;
                     let z = &mut rhs_binary.rhs;
 
                     use std::mem::swap;
+
+                    // X * Y + Z -> Y * X + Z
+                    swap(x, y);
+
+                    // Y * X + Z -> Z * X + Y
+                    // (Note: confusingly, x and z are now holding Y and Z,
+                    // because of the above swap.)
                     swap(x, z);
 
-                    // Now any, i.e. rhs, is Y + X. Swap the ops too.
+                    // Swap the ops: Z * X + Y -> Z + X * Y
                     swap(&mut rhs_binary.op, &mut lh_op);
-                }
 
-                // Now rhs is Y * X.
-                //
-                // @TODO we must rearrange, because what if instead of
-                // *, it's a non-commutative op!
-                // Can do so by swapping perversely swapping more:
-                // Y * X -> Z * X -> Z * Y -> X * Y...!
-                // Would the compiler figure it out?
+                    // Now we just need to swap the order of the Syntax structs
+                    // themselves: Z + X * Y -> X * Y + Z. We do so below once
+                    // the &mut drops from scope.
+                }
             }
 
             if lh_op_precedes {
-                // Note the order here is not arbitrary, because of the
-                // non-commutativity of some ops.
                 Some(self::Syntax {
-                    lhs,
-                    rhs,
+                    lhs: rhs,
+                    rhs: lhs,
                     op: lh_op,
                 })
             } else {

@@ -14,16 +14,32 @@ impl Syntax {
         let name = syntax::name::Syntax::parse(tokens)?;
         tokens.eat(TokenKind::ParenOpen)?;
 
-        // @TODO
         let mut parameters = Vec::new();
-        /*
-        let parameter_iter = std::iter::repeat_with(|| {
-            syntax::parameter::Syntax::parse(&mut tokens)?
-        });
-        for parameters in parameter_iter {
-            parameters.push(paramater);
+
+        if tokens.peek()?.kind != TokenKind::ParenClose {
+            loop {
+                // @TODO type specification (or change from C-style signature to
+                // Haskell style)
+
+                parameters.push(Box::new(
+                    syntax::name::Syntax::parse(tokens)?
+                ) as Box<syntax::Syntax>);
+
+                // Arguments must be delimited by commas
+                match tokens.peek()?.kind {
+                    TokenKind::GramComma => {
+                        // Note I am accepting a ) directly after a , like Rust.
+                        tokens.eat(TokenKind::GramComma)?;
+
+                        if tokens.peek()?.kind == TokenKind::ParenClose {
+                            break;
+                        }
+                    },
+                    TokenKind::ParenClose => break,
+                    _ => return None,
+                }
+            }
         }
-        */
 
         tokens.eat(TokenKind::ParenClose)?;
 

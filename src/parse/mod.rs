@@ -8,6 +8,7 @@ mod syntax {
     pub mod expression;
     pub mod binary;
     pub mod init;
+    pub mod call;
     pub mod name;
     pub mod literal;
 
@@ -20,11 +21,6 @@ mod syntax {
     ///
     pub trait Syntax: std::fmt::Debug {
         // parse() doesn't go here. It requires type information.
-
-        // Wrappers round std::any syntax
-
-        /// Down-casts to a particular `Syntax`.
-
 
         // std::any is used for down-casting
 

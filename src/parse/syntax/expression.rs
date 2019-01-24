@@ -17,19 +17,28 @@ impl Syntax {
         // possible binary ops.
 
         // Eat a primitive
-        let primitive = match tokens.peek()? {
-            Token { kind: TokenKind::LitInteger, .. } => {
+        let primitive = match tokens.peek()?.kind {
+            TokenKind::LitInteger => {
                 Box::new(
                     syntax::literal::Syntax::parse(tokens)?
                 ) as Box<syntax::Syntax>
             },
-            Token { kind: TokenKind::OthName, .. } => {
-                Box::new(
-                    syntax::name::Syntax::parse(tokens)?
-                ) as Box<syntax::Syntax>
+
+            TokenKind::OthName => {
+                // Handle possible call
+                let name = syntax::name::Syntax::parse(tokens)?;
+
+                match tokens.peek()?.kind {
+                    TokenKind::ParenOpen => {
+                        Box::new(
+                            syntax::call::Syntax::parse(tokens, name)?
+                        ) as Box<syntax::Syntax>
+                    },
+                    _ => Box::new(name) as Box<syntax::Syntax>,
+                }
             },
 
-            // @TODO calls, ...? Blocks and other flow constructs?
+            // @TODO Blocks and other flow constructs?
 
             _ => return None,
         };
